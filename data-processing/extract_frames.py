@@ -4,7 +4,7 @@ import math
 
 # -------- SETTINGS --------
 RAW_DATASET = "NSL_Consonant"         # Your consonant dataset folder
-OUTPUT_DIR = "processed_consonant"    # Output folder for consonants
+OUTPUT_DIR = "processed"    # Output folder for consonants
 FRAME_COUNT = 20                      
 FRAME_SIZE = (224, 224)
 

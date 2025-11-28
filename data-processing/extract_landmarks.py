@@ -3,7 +3,7 @@ import mediapipe as mp
 import os
 import numpy as np
 
-dataset_dir = "processed_Consonant"
+dataset_dir = "nsl_interpreter\processed"
 output_dir = "landmark_sequences"
 max_frames = 20
 
