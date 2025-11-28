@@ -1,7 +1,7 @@
 import os
 import csv
 
-dataset_dir = "processed_consonant"
+dataset_dir = "nsl_interpreter\processed"
 output_csv = "labels.csv"
 
 rows = []
