@@ -41,9 +41,6 @@ venv/
 ehthumbs.db
 Thumbs.db
 
-# Environment variables
-.env
-
 # Data files 
 data/
 
