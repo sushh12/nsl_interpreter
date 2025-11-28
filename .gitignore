@@ -23,6 +23,7 @@ wheels/
 # Virtual environments
 myvenv/
 venv/
+.venv/
 
 # Jupyter Notebook
 .ipynb_checkpoints
