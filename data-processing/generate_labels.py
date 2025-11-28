@@ -1,8 +1,8 @@
 import os
 import csv
 
-dataset_dir = "processed_dataset"
-output_csv = "labels1.csv"
+dataset_dir = "processed_consonant"
+output_csv = "labels.csv"
 
 rows = []
 
