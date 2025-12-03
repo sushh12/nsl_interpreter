@@ -1,65 +1,86 @@
-import cv2
-import mediapipe as mp
 import os
+import cv2
 import numpy as np
+import mediapipe as mp
 
-dataset_dir = "nsl_interpreter\processed"
-output_dir = "landmark_sequences"
-max_frames = 20
-
+# ---------------- Mediapipe Setup ----------------
 mp_holistic = mp.solutions.holistic
-os.makedirs(output_dir, exist_ok=True)
 
-for class_name in os.listdir(dataset_dir):
-    class_path = os.path.join(dataset_dir, class_name)
-    if not os.path.isdir(class_path):
-        continue
+def extract_keypoints(image):
+    """Extract 225 features (pose 99 + left hand 63 + right hand 63)."""
+    with mp_holistic.Holistic(
+        model_complexity=1,
+        smooth_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    ) as holistic:
 
-    output_class_path = os.path.join(output_dir, class_name)
-    os.makedirs(output_class_path, exist_ok=True)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = holistic.process(image)
 
-    for video_folder in os.listdir(class_path):
-        video_path = os.path.join(class_path, video_folder)
-        if not os.path.isdir(video_path):
+        pose = np.zeros(33*3)
+        lh   = np.zeros(21*3)
+        rh   = np.zeros(21*3)
+
+        if results.pose_landmarks:
+            pose = np.array([[lm.x, lm.y, lm.z]
+                             for lm in results.pose_landmarks.landmark]).flatten()
+
+        if results.left_hand_landmarks:
+            lh = np.array([[lm.x, lm.y, lm.z]
+                           for lm in results.left_hand_landmarks.landmark]).flatten()
+
+        if results.right_hand_landmarks:
+            rh = np.array([[lm.x, lm.y, lm.z]
+                           for lm in results.right_hand_landmarks.landmark]).flatten()
+
+        return np.concatenate([pose, lh, rh])  # shape = (225,)
+
+
+# ---------------- Paths ----------------
+FRAMES_DIR = "processed"                # your frame folders
+OUTPUT_DIR = "landmark_sequences"    # where .npy files will be saved
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+# ---------------- Main Processing ----------------
+def process_all_sequences():
+    for class_name in os.listdir(FRAMES_DIR):
+        class_path = os.path.join(FRAMES_DIR, class_name)
+        if not os.path.isdir(class_path):
             continue
 
-        sequence = []
+        output_class_dir = os.path.join(OUTPUT_DIR, class_name)
+        os.makedirs(output_class_dir, exist_ok=True)
 
-        with mp_holistic.Holistic(static_image_mode=True) as holistic:
-            frame_files = sorted(os.listdir(video_path))
+        for seq_folder in os.listdir(class_path):
+            seq_path = os.path.join(class_path, seq_folder)
+            if not os.path.isdir(seq_path):
+                continue
 
-            for f in frame_files[:max_frames]:
-                img_path = os.path.join(video_path, f)
-                img = cv2.imread(img_path)
-                img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            frames = sorted(os.listdir(seq_path))[:20]  # only 20 frames
 
-                result = holistic.process(img_rgb)
+            if len(frames) < 20:
+                print(f"❌ Skipped {seq_folder}: less than 20 frames")
+                continue
 
-                # ---- Extract Hands Only ----
-                left_hand = []
-                right_hand = []
+            sequence = []
 
-                # Left hand (21 landmarks)
-                if result.left_hand_landmarks:
-                    for lm in result.left_hand_landmarks.landmark:
-                        left_hand += [lm.x, lm.y, lm.z]
-                else:
-                    left_hand = [0] * 63   # 21*3
+            for frame_name in frames:
+                frame_path = os.path.join(seq_path, frame_name)
+                image = cv2.imread(frame_path)
 
-                # Right hand (21 landmarks)
-                if result.right_hand_landmarks:
-                    for lm in result.right_hand_landmarks.landmark:
-                        right_hand += [lm.x, lm.y, lm.z]
-                else:
-                    right_hand = [0] * 63   # 21*3
+                keypoints = extract_keypoints(image)
+                sequence.append(keypoints)
 
-                # Combine both hands → 126 values
-                frame_landmarks = left_hand + right_hand
-                sequence.append(frame_landmarks)
+            sequence = np.array(sequence)  # shape = (20, 225)
 
-        sequence = np.array(sequence)
-        np.save(os.path.join(output_class_path, video_folder + ".npy"), sequence)
+            np.save(os.path.join(output_class_dir, seq_folder), sequence)
 
-        print(f"Saved landmark sequence for {video_folder}")
+            print(f"✅ Saved {seq_folder}: shape = {sequence.shape}")
 
-print("✅ Landmark extraction completed using Mediapipe Holistic (hands only)")
+    print("\n🎉 All sequences converted successfully!")
+
+
+if __name__ == "__main__":
+    process_all_sequences()

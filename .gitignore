@@ -54,3 +54,4 @@ logs/
 # Local configuration files
 config.ini
 local_settings.py
+

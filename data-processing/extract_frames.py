@@ -1,20 +1,21 @@
+# extracting frames from raw video dataset
 import os
 import cv2
 import math
 
 # -------- SETTINGS --------
-RAW_DATASET = "NSL_Consonant"         # Your consonant dataset folder
-OUTPUT_DIR = "processed"    # Output folder for consonants
-FRAME_COUNT = 20                      
-FRAME_SIZE = (224, 224)
+raw_dataset = "NSL_Consonant"         # Your consonant dataset folder
+output_dir = "processed"    # Output folder for consonants
+frame_count = 20                      
+frame_size = (224, 224)
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(output_dir, exist_ok=True)
 
 VIDEO_EXTS = [".mov", ".mp4", ".avi", ".mkv"]
 
 video_id_counter = {}
 
-for root, _, files in os.walk(RAW_DATASET):
+for root, _, files in os.walk(raw_dataset):
     for file in files:
         ext = os.path.splitext(file)[1].lower()
         if ext not in VIDEO_EXTS:
@@ -29,7 +30,7 @@ for root, _, files in os.walk(RAW_DATASET):
 
         video_id_counter[label] = video_id_counter.get(label, 0) + 1
         video_folder = os.path.join(
-            OUTPUT_DIR, 
+            output_dir, 
             label, 
             f"{parts[0]}{label}{video_id_counter[label]:02d}"
         )
@@ -37,13 +38,13 @@ for root, _, files in os.walk(RAW_DATASET):
 
         video_path = os.path.join(root, file)
         cap = cv2.VideoCapture(video_path)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        total_frames = int(cap.get(cv2.CAP_PROP_frame_count))
 
-        if total_frames < FRAME_COUNT:
+        if total_frames < frame_count:
             frame_indices = list(range(total_frames))
         else:
-            step = total_frames / FRAME_COUNT
-            frame_indices = [math.floor(step * i) for i in range(FRAME_COUNT)]
+            step = total_frames / frame_count
+            frame_indices = [math.floor(step * i) for i in range(frame_count)]
 
         frame_idx = 0
         saved_count = 0
@@ -54,7 +55,7 @@ for root, _, files in os.walk(RAW_DATASET):
                 break
 
             if frame_idx in frame_indices:
-                frame_resized = cv2.resize(frame, FRAME_SIZE)
+                frame_resized = cv2.resize(frame, frame_size)
                 frame_filename = os.path.join(video_folder, f"{saved_count:04d}.jpg")
                 cv2.imwrite(frame_filename, frame_resized)
                 saved_count += 1
